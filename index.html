@@ -33,6 +33,7 @@
       <textarea
         v-model="text"
         style="height:20em"
+        placeholder="llista ids"
       ></textarea><br>
       <button
         style="
@@ -136,6 +137,7 @@
         window.open(`https://youtube.com/watch?v=${video_id}`);
       },
       processa_textarea(){
+        if(this.text=="") return;
         let linies = this.text.split('\n');
         this.llista=linies;
         this.items=[];
