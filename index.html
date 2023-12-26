@@ -49,7 +49,9 @@
     <!--dreta: resultats-->
     <div>
       <div>Resultats ({{items.length}})
-        <button @click="items=[]" :disabled="items.length==0">esborrar resultats</button>
+        <button @click="items=[]" :disabled="items.length==0">
+          esborrar resultats
+        </button>
         <span v-if="buscant">&nbsp;buscant...</span>
       </div>
       <table border=1>
@@ -88,7 +90,9 @@
             <td number>{{item.views}}</td>
             <td dreta>
               <div>{{item.publishedAt}}</div>
-              <small style="font-size:x-small">(fa {{item.days_since_published}} dies)</small>
+              <small style="font-size:x-small">
+                (fa {{item.days_since_published}} dies)
+              </small>
             </td>
             <td number>
               {{item.views_per_day}}
@@ -228,7 +232,9 @@
               let duration_seconds = app.duration_to_seconds(duration);
               publishedAt = publishedAt.substring(0,10);
 
-              let days_since_published = Math.round((new Date().getTime()-new Date(publishedAt).getTime())/864e5);
+              let days_since_published = Math.round(
+                (new Date().getTime()-new Date(publishedAt).getTime())/864e5
+              );
               let views_per_day = Math.round(views/days_since_published);
 
               //afegeix resultats a "items"
