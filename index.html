@@ -20,6 +20,8 @@
     }
   </style>
 </head><body><h1>llista youtube</h1>
+<h4>Enganxa una llista d'ids de vídeos i prem el botó "buscar"</h4>
+
 <div id=app>
   <div
     style="
@@ -29,7 +31,6 @@
   >
     <!--esquerra:query-->
     <div style="margin-right:10px">
-      <div>Enganxa aquí llista d'ids</div>
       <textarea
         v-model="text"
         style="height:20em"
@@ -48,16 +49,18 @@
 
     <!--dreta: resultats-->
     <div>
-      <div>Resultats ({{items.length}})
-        <button @click="items=[]" :disabled="items.length==0">
+      <div>
+        <span>Resultats ({{items.length}})&nbsp;</span>
+        <button @click="items=[]" v-show="items.length">
           esborrar resultats
         </button>
         <span v-if="buscant">&nbsp;buscant...</span>
       </div>
-      <table border=1>
+
+      <table border=1 style="margin-top:5px">
         <thead>
           <tr>
-            <th>id</th>
+            <th>id youtube</th>
             <th>títol</th>
             <th>duració</th>
             <th>
@@ -78,11 +81,16 @@
             <th>X</th>
           </tr>
         </thead>
+        <tr v-if="items.length==0">
+          <td colspan=7>
+            <code>Prem el botó "buscar"</code>
+          </td>
+        </tr>
         <tbody>
           <tr v-for="item,i in items">
             <td style="font-family:monospace">{{item.id}}</td>
             <td>
-              <a href=# @click="obre(item.id)">
+              <a target="_blank" :href="crea_url(item.id)">
                 {{item.title}}
               </a>
             </td>
@@ -102,13 +110,13 @@
         </tbody>
 
         <tfoot>
-          <td></td>
-          <td></td>
-          <td dreta>{{duracio_total}}</td>
-          <td></td>
-          <td></td>
-          <td></td>
-          <td></td>
+          <th></th>
+          <th></th>
+          <th dreta>{{duracio_total}}</td>
+          <th></th>
+          <th></th>
+          <th></th>
+          <th></th>
         </tfoot>
       </table>
     </div>
@@ -116,29 +124,101 @@
 </div>
 
 <script>
+  const API_KEY="AIzaSyCwkd2zK5A_IUFXRJ8wsRNWpJyY8nJ5Gic";
+  function busca_videos(){
+    return new Promise(function(resolve,reject){
+      gapi.client.load('youtube','v3',()=>{
+        console.log('YouTube API carregada correctament');
+        app.llista.forEach(video_id=>{
+          if(!video_id) return;
+
+          const request = gapi.client.youtube.videos.list({
+            part: 'snippet,contentDetails,statistics',
+            id: video_id,
+          });
+
+          request.execute(response=>{
+            const video = response.items[0];
+            if(video){
+              //console.log(video);//debug
+              const title     = video.snippet.title;
+              const views     = video.statistics.viewCount;
+              let duration    = video.contentDetails.duration;
+              let publishedAt = video.snippet.publishedAt;
+              console.log(`Video trobat "${video_id}"`);
+
+              //processa raw data
+              duration = duration.substring(2); //remove "PT" from the beggining
+              let duration_seconds = app.duration_to_seconds(duration);
+              publishedAt = publishedAt.substring(0,10);
+
+              let days_since_published = Math.round(
+                (new Date().getTime()-new Date(publishedAt).getTime())/864e5
+              );
+              let views_per_day = Math.round(views/days_since_published);
+
+              //afegeix resultats a "items"
+              app.items.push({
+                id:video_id,
+                title,
+                views,
+                duration,
+                duration_seconds,
+                publishedAt,
+                days_since_published,
+                views_per_day,
+              });
+              resolve();
+            }else{
+              console.log(`Video no trobat "${video_id}"`);
+            }
+          });
+        });
+      });
+    });
+  }
+
+  //inicia google api
+  gapi.load('client',()=>{
+    gapi.client.init({
+      apiKey:API_KEY,
+    }).then(()=>{
+      console.log('Google Client iniciat correctament');
+      //app.processa_textarea();
+    })
+  });
+</script>
+
+<script>
   let app = Vue.createApp({
     data(){return{
       buscant:false,
       text:[
-        "FTQbiNvZqaY",//toto - africa
         "TLaF7ErqArY",//australian blonde - chup chup
-        "vabnZ9-ex7o",//nirvana - come as you are
+        "iXQUu5Dti4g",//led zeppelin - stairway to heaven
         "cF3OWCYLLVQ",//dire straits - sultans of swing
-        "CocEMWdc7Ck",//shakira bzrp session 53
-        "WcIcVapfqXw",//selena gomez - calm down
-        "O4-6Y_91v5I",//florence and the machine - say my name
+        "vabnZ9-ex7o",//nirvana - come as you are
         "eBG7P-K-r1Y",//foo fighters - everlong
+        "MbXWrmQW-OE",//police - message in a bottle
+        "4aeETEoNfOg",//smashing pumpkins - 1979
+        "0xGPi-Al3zQ",//fleetwood mac - rihannon
+        "-oqAU5VxFWs",//couting crows - mr jones
+
+        //"FTQbiNvZqaY",//toto - africa
+        //"CocEMWdc7Ck",//shakira bzrp session 53
+        //"WcIcVapfqXw",//selena gomez - calm down
+        //"O4-6Y_91v5I",//florence and the machine - say my name
       ].join('\n'),
       llista:[
-        /*el text es transforma en un array aquí dins*/
+        /*el text es transforma en un array d'ids aquí*/
       ],
       items:[
         /*array de resultats després de buscar a youtube*/
       ],
     }},
     methods:{
-      obre(video_id){
-        window.open(`https://youtube.com/watch?v=${video_id}`);
+      crea_url(video_id){
+        return `https://youtube.com/watch?v=${video_id}`;
       },
       processa_textarea(){
         if(this.text=="") return;
@@ -199,72 +279,4 @@
       },
     },
   }).mount("#app");
-</script>
-
-<script>
-  const API_KEY="AIzaSyCwkd2zK5A_IUFXRJ8wsRNWpJyY8nJ5Gic";
-  function busca_videos(){
-    return new Promise(function(resolve,reject){
-      gapi.client.load('youtube','v3',()=>{
-        console.log('YouTube API carregada correctament');
-
-        //itera llista d'ids
-        app.llista.forEach(video_id=>{
-          if(!video_id) return;
-
-          const request = gapi.client.youtube.videos.list({
-            part: 'snippet,contentDetails,statistics',
-            id: video_id,
-          });
-
-          request.execute(response=>{
-            const video = response.items[0];
-            if(video){
-              //console.log(video);//debug
-              const title     = video.snippet.title;
-              const views     = video.statistics.viewCount;
-              let duration    = video.contentDetails.duration;
-              let publishedAt = video.snippet.publishedAt;
-              console.log(`Video trobat "${video_id}"`);
-
-              //processa raw data
-              duration = duration.substring(2); //remove "PT" from the beggining
-              let duration_seconds = app.duration_to_seconds(duration);
-              publishedAt = publishedAt.substring(0,10);
-
-              let days_since_published = Math.round(
-                (new Date().getTime()-new Date(publishedAt).getTime())/864e5
-              );
-              let views_per_day = Math.round(views/days_since_published);
-
-              //afegeix resultats a "items"
-              app.items.push({
-                id:video_id,
-                title,
-                views,
-                duration,
-                duration_seconds,
-                publishedAt,
-                days_since_published,
-                views_per_day,
-              });
-              resolve();
-            }else{
-              console.log(`Video no trobat "${video_id}"`);
-            }
-          });
-        });
-      });
-    });
-  }
-
-  //inicia google api
-  gapi.load('client',()=>{
-    gapi.client.init({
-      apiKey:API_KEY,
-    }).then(()=>{
-      console.log('Google Client iniciat correctament');
-      //busca_videos();
-    })
-  });
 </script>
